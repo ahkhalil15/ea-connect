@@ -4,13 +4,9 @@
  * Navigation architecture:
  *   Stack (root)
  *     └─ "Inbox"       → MainTabs (bottom tab navigator)
- *     │    ├─ Chat      → InboxScreen (untouched)
+ *     │    ├─ Chat      → InboxScreen
  *     │    └─ Showdowns → ShowdownsInboxScreen
- *     ├─ LobbyPreview   → slide_from_bottom
- *     └─ ChatThread     → slide_from_right
- *
- * The tab navigator is registered under the "Inbox" stack screen name
- * so RootStackParamList and InboxScreenNavigationProp remain unchanged.
+ *     └─ ChatThread     → slide_from_right (contains Showdown widgets)
  */
 
 import React from 'react';
@@ -22,7 +18,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import Toast from 'react-native-toast-message';
 import { InboxScreen } from './src/screens/InboxScreen';
-import { LobbyPreviewScreen } from './src/screens/LobbyPreviewScreen';
 import { ChatThreadScreen } from './src/screens/ChatThreadScreen';
 import { ShowdownsInboxScreen } from './src/screens/ShowdownsInboxScreen';
 import { toastConfig } from './src/components/ToastConfig';
@@ -116,11 +111,6 @@ export default function App() {
             }}
           >
             <Stack.Screen name="Inbox" component={MainTabs} />
-            <Stack.Screen
-              name="LobbyPreview"
-              component={LobbyPreviewScreen}
-              options={{ animation: 'slide_from_bottom' }}
-            />
             <Stack.Screen name="ChatThread" component={ChatThreadScreen} />
           </Stack.Navigator>
           <Toast config={toastConfig} />

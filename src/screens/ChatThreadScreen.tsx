@@ -39,7 +39,6 @@ interface TextChatItem {
   text: string;
   sender: 'me' | 'them';
   timestamp: Date;
-  sentViaEcho?: boolean;
 }
 
 interface ShowdownChatItem {
@@ -90,7 +89,7 @@ const INPUT_BAR_HEIGHT = 70;
 export const ChatThreadScreen: React.FC = () => {
   const navigation = useNavigation<ChatThreadScreenNavigationProp>();
   const route = useRoute<ChatThreadScreenRouteProp>();
-  const { player, gameContext, quickMessage, sentViaEcho, autoJoinLobby } = route.params;
+  const { player, gameContext, quickMessage, autoJoinLobby } = route.params;
 
   const [items, setItems] = useState<ChatItem[]>([]);
   const [inputText, setInputText] = useState('');
@@ -114,7 +113,7 @@ export const ChatThreadScreen: React.FC = () => {
     if (quickMessage) {
       initial.push({
         id: 'init_2', type: 'text', text: quickMessage,
-        sender: 'me', timestamp: new Date(Date.now() - 7 * 60 * 1000), sentViaEcho: true,
+        sender: 'me', timestamp: new Date(Date.now() - 7 * 60 * 1000),
       });
       setShowQuickReplies(false);
     }
@@ -313,11 +312,6 @@ export const ChatThreadScreen: React.FC = () => {
     const isMe = t.sender === 'me';
     return (
       <View style={styles.itemWrapper}>
-        {t.sentViaEcho && isMe && (
-          <View style={styles.echoTag}>
-            <Text style={styles.echoTagText}>Sent via EA Echo</Text>
-          </View>
-        )}
         <View style={[styles.messageBubble, isMe ? styles.myMessage : styles.theirMessage]}>
           <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.theirMessageText]}>
             {t.text}
@@ -494,15 +488,6 @@ const styles = StyleSheet.create({
   itemWrapper: {
     marginBottom: 12,
   },
-  echoTag: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#1A1A24',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginBottom: 4,
-  },
-  echoTagText: { color: '#0076FF', fontSize: 10, fontWeight: '500' },
   messageBubble: {
     maxWidth: '80%',
     paddingHorizontal: 16,

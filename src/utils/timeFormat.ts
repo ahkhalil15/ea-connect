@@ -1,5 +1,5 @@
 /**
- * Time formatting utilities for EA Echo
+ * Time formatting utilities
  * Converts ISO timestamps to human-readable relative time
  */
 
@@ -33,7 +33,6 @@ export function formatRelativeTime(isoTimestamp: string): string {
     return days === 1 ? '1 day ago' : `${days} days ago`;
   }
   
-  // For older items, show the date
   return past.toLocaleDateString('en-US', { 
     month: 'short', 
     day: 'numeric' 
@@ -42,7 +41,6 @@ export function formatRelativeTime(isoTimestamp: string): string {
 
 /**
  * Truncates text with ellipsis if it exceeds maxLength
- * Handles edge cases like long EA IDs
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) {

@@ -55,8 +55,7 @@ ea-connect/
 │   ├── screens/
 │   │   ├── ShowdownsInboxScreen.tsx         # Showdowns tab (filter + FlatList)
 │   │   ├── ChatThreadScreen.tsx             # Chat with inline ShowdownWidget
-│   │   ├── InboxScreen.tsx                  # Chat inbox
-│   │   └── LobbyPreviewScreen.tsx           # Game lobby preview
+│   │   └── InboxScreen.tsx                  # Chat inbox
 │   ├── types/
 │   │   ├── showdown.ts                      # Core types: ShowdownBounty, GameOption, etc.
 │   │   ├── navigation.ts                    # Stack navigation types
@@ -74,8 +73,7 @@ Stack (root)
   ├─ "Inbox" → MainTabs (bottom tab navigator)
   │    ├─ Chat      → InboxScreen
   │    └─ Showdowns → ShowdownsInboxScreen
-  ├─ LobbyPreview   → slide_from_bottom
-  └─ ChatThread     → slide_from_right
+  └─ ChatThread     → slide_from_right (contains Showdown widgets)
 ```
 
 ## Getting Started
