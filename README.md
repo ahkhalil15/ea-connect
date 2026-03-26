@@ -1,56 +1,81 @@
-# EA Connect - EA Echo Feature
+# EA Connect — EA Showdowns
 
-A React Native Expo mobile prototype for the "EA Echo" smart catch-up engine.
+A React Native Expo mobile prototype for **EA Showdowns**, a real-time competitive bounty system that lets players challenge friends to stat-based races across EA titles.
+
+**Live Demo:** [deploy-steel-delta.vercel.app](https://deploy-steel-delta.vercel.app/)
 
 ## Overview
 
-EA Echo solves a critical business problem: improving organic push notification opt-in rates (currently at 22%) by showing users exactly who they missed game invites from through a contextual "While You Were Away" experience.
+EA Showdowns transforms passive social connections into active competitive moments. Players drop "bounties" — stat-based challenges like "First to 10 Goals Scored" — directly inside chat threads, creating persistent head-to-head races powered by EADP telemetry.
 
 ## Features
 
-### EA Echo Carousel
-- **"While You Were Away"** horizontal carousel at the top of the Inbox
-- Premium Echo Cards with animated glowing borders (EA primary blue)
-- Highly contextual missed interaction displays:
-  - Missed game invites (lobby invitations)
-  - Missed messages
+### Showdown Bounty Cards (In-Chat)
+- **Live-telemetry widget** embedded in chat threads with real-time progress bars
+- **State machine** with 4 visual states: Active (blue), Losing (red), Draw/Deadlock (gold), Completed (gold gradient + particles)
+- Animated progress bars, floating score increments, card shake on updates
+- Crown + gold particle explosion on win, confetti celebration
+- REMATCH button spawns a fresh bounty inline
 
-### Quick Message System
-- Frictionless, keyboardless reply options
-- Pre-written contextual responses ("Yeah! I'm down", "Need a minute", etc.)
-- Pill-shaped buttons with press-state feedback
+### Showdowns Inbox
+- Dedicated tab with filter pills: **Pending**, **Active**, **Completed**
+- Inbox cards with mini progress bars, score gaps, and time remaining
+- **Accept / Decline** actions for pending challenges
+- Tap any card to navigate to the chat thread
 
-### Production-Ready Interactions
-- Haptic feedback on user actions
-- Smooth fade-out animations when cards are dismissed
-- Toast notifications for successful actions
-- Telemetry event logging (console-based for prototype)
+### Showdown Creation Sheet
+- Bottom sheet with 3-step progressive disclosure:
+  1. **Pick your game** — EA SPORTS FC 26, Battlefield 6, Apex Legends
+  2. **Pick your stat** — game-specific metrics (Goals Scored, Eliminations, etc.)
+  3. **Set the target** — preset values (5, 10, 15, 20, 25)
+- "DROP THE BOUNTY" button with game-colored accent
+
+### Simulate EADP Telemetry
+- Deterministic demo arc: Press 1 → opponent scores (LOSING), Press 2 → you catch up (DRAW), Press 3+ → random (→ WIN)
+- Demonstrates how real EADP MatchEndsForPlayer telemetry would drive the experience
 
 ## Project Structure
 
 ```
 ea-connect/
-├── App.tsx                     # Main application entry
+├── App.tsx                                  # Root — Stack + Tab navigators
+├── showdown-demo.html                       # Self-contained HTML demo
+├── deploy/                                  # Vercel deployment (static HTML)
 ├── src/
 │   ├── components/
-│   │   ├── Avatar.tsx          # Player avatar with presence indicator
-│   │   ├── EchoCard.tsx        # Premium missed interaction card
-│   │   ├── EchoCarousel.tsx    # Horizontal FlatList carousel
-│   │   ├── InboxMessageItem.tsx # Standard inbox message row
-│   │   ├── QuickMessagePill.tsx # Frictionless reply button
-│   │   └── ToastConfig.tsx     # Custom toast styling
+│   │   ├── ShowdownWidget.tsx               # Live-telemetry bounty card (state machine)
+│   │   ├── ShowdownProgressBar.tsx          # Animated progress bar per participant
+│   │   ├── ShowdownInboxCard.tsx            # Inbox row (pending/active/completed)
+│   │   ├── ShowdownCreationSheet.tsx        # 3-step bottom sheet
+│   │   ├── Avatar.tsx                       # Player avatar with presence dot
+│   │   └── ToastConfig.tsx                  # Custom toast styling
 │   ├── data/
-│   │   └── mockData.ts         # EADP-aligned mock state
-│   ├── hooks/
-│   │   └── useEchoState.ts     # State management hook
+│   │   ├── eadpMock.ts                      # 6 mock bounties + CHAT_METADATA
+│   │   └── mockData.ts                      # Chat/inbox mock data
 │   ├── screens/
-│   │   └── InboxScreen.tsx     # Main inbox view
+│   │   ├── ShowdownsInboxScreen.tsx         # Showdowns tab (filter + FlatList)
+│   │   ├── ChatThreadScreen.tsx             # Chat with inline ShowdownWidget
+│   │   ├── InboxScreen.tsx                  # Chat inbox
+│   │   └── LobbyPreviewScreen.tsx           # Game lobby preview
 │   ├── types/
-│   │   └── index.ts            # TypeScript type definitions
+│   │   ├── showdown.ts                      # Core types: ShowdownBounty, GameOption, etc.
+│   │   ├── navigation.ts                    # Stack navigation types
+│   │   └── tabNavigation.ts                 # Tab navigation types
 │   └── utils/
-│       ├── theme.ts            # Design tokens and constants
-│       └── timeFormat.ts       # Time formatting utilities
-└── assets/                     # App icons and images
+│       ├── theme.ts                         # Design tokens
+│       └── timeFormat.ts                    # Time formatting
+└── assets/                                  # App icons and images
+```
+
+## Navigation Architecture
+
+```
+Stack (root)
+  ├─ "Inbox" → MainTabs (bottom tab navigator)
+  │    ├─ Chat      → InboxScreen
+  │    └─ Showdowns → ShowdownsInboxScreen
+  ├─ LobbyPreview   → slide_from_bottom
+  └─ ChatThread     → slide_from_right
 ```
 
 ## Getting Started
@@ -58,7 +83,7 @@ ea-connect/
 ### Prerequisites
 - Node.js 18+
 - Expo CLI (`npm install -g expo-cli`)
-- iOS Simulator or Android Emulator (or Expo Go app on device)
+- iOS Simulator or Android Emulator (or Expo Go app)
 
 ### Installation
 
@@ -70,52 +95,61 @@ npm install
 ### Running the App
 
 ```bash
-# Start the development server
-npm start
-
-# Run on iOS
-npm run ios
-
-# Run on Android
-npm run android
+npm start       # Start dev server
+npm run ios     # Run on iOS
+npm run android # Run on Android
+npm run web     # Run on web
 ```
 
-## Mock Data Schema (EADP Telemetry Alignment)
+## Data Model (EADP Telemetry Alignment)
 
 ```typescript
-interface MissedInteraction {
-  eventId: string;              // Unique event identifier
-  eventType: 'missed_game_invite' | 'missed_message';
-  player: {
-    eaId: string;               // e.g., "ShadowRanger"
-    avatarUrl: string;
-    presenceStatus: 'online' | 'away' | 'in_game' | 'offline';
+interface ShowdownBounty {
+  bountyId: string;
+  chatId: string;
+  createdAt: string;
+  expiresAt: string;
+  challengeContext: {
+    gameName: 'EA SPORTS FC 26' | 'Battlefield 6' | 'Apex Legends';
+    gameLogoColor: string;
+    metric: 'Goals Scored' | 'Eliminations' | 'Damage Dealt' | 'Wins' | 'Assists';
+    targetScore: number;
   };
-  gameContext: {
-    gameName: string;           // e.g., "EA SPORTS FC 26"
-    gameImage: string;
-  };
-  timestamp: string;            // ISO 8601 format
-  messagePreview?: string;      // Optional for missed_message type
+  status: 'pending' | 'active' | 'completed' | 'expired';
+  participants: ShowdownParticipant[];
 }
 ```
 
 ## Design System
 
-- **Background**: Deep, rich black (#0a0a0a)
-- **Cards**: Dark grey (#1a1a1a) with EA primary blue glow
-- **Accent Color**: EA Primary Blue (#0074e4)
-- **Typography**: Clean, legible with proper truncation for long EA IDs
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--bg` | `#050508` | App background |
+| `--surface` | `#0A0A0F` | Screen background |
+| `--card` | `#111118` | Card/header background |
+| `--blue` | `#0076FF` | Primary accent, active states |
+| `--gold` | `#FFB800` | Winner, crown, draw |
+| `--red` | `#FF3B5C` | Losing, defeated |
+| `--green` | `#00E676` | Online presence, score increments |
 
-## Telemetry Events
+**Typography:** Barlow Condensed (headings), Barlow (body), JetBrains Mono (labels/scores)
 
-The prototype logs the following events (console-based):
-- `Send Message click event triggered` - When a Quick Message is sent
-- Interaction dismissed events
-- Navigation events
+## ShowdownWidget State Machine
 
-## Edge Cases Handled
+| State | Trigger | Border | Badge | Special |
+|-------|---------|--------|-------|---------|
+| Active | Default | Blue glow | 🟢 LIVE | Blue progress bars |
+| Losing | Local user behind | Red glow | 🔴 LIVE | Red bar, "You're behind" banner |
+| Draw | Scores tied (>0) | Gold glow | ⚡ DEADLOCK | Gold bars, "Tied at X" label |
+| Completed | Target reached | Gold gradient | 👑 WINNER / 💀 DEFEATED / ⚡ DRAW | Particles, confetti, FINAL SCORE + REMATCH |
 
-- Long EA IDs truncate with ellipsis
-- Empty state: Carousel cleanly collapses when all interactions are dismissed
-- Smooth layout animations when cards are removed
+## Mock Players
+
+| EA ID | Game | Chat ID |
+|-------|------|---------|
+| ShadowRanger | Apex Legends | chat_shadowranger |
+| NeonViper_42 | EA SPORTS FC 26 | chat_neonviper42 |
+| BlazeStrike | Battlefield 6 | chat_blazestrike |
+| FrostByte_X | EA SPORTS FC 26 | chat_frostbytex |
+| xX_PhantomAce_Xx | Apex Legends | chat_phantomace |
+| GlitchHunter99 | EA SPORTS FC 26 | chat_glitchhunter99 |
