@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EA Showdowns — Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050508;--surface:#0A0A0F;--card:#111118;--elev:#1A1A24;--elev2:#22222E;--blue:#0076FF;--blue-dim:rgba(0,118,255,.4);--blue-glow:rgba(0,118,255,.2);--gold:#FFB800;--gold-dim:rgba(255,184,0,.15);--gold-glow:rgba(255,184,0,.3);--green:#00E676;--red:#FF3B5C;--text:#E8E8F0;--dim:#8888A0;--dimmer:#55556A;--border:rgba(255,255,255,.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;height:100vh;overflow:hidden;display:flex;justify-content:center;align-items:center}
+.phone{width:100%;max-width:420px;height:100vh;max-height:900px;background:var(--surface);display:flex;flex-direction:column;position:relative;overflow:hidden;border-left:1px solid rgba(255,255,255,.04);border-right:1px solid rgba(255,255,255,.04)}
+@media(min-height:901px){.phone{border-radius:24px;border:1px solid rgba(255,255,255,.06)}}
+
+/* TAB BAR */
+.tab-bar{display:flex;background:var(--card);border-top:1px solid rgba(0,118,255,.15);flex-shrink:0;z-index:20}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 10px;cursor:pointer;transition:all .15s;gap:3px;position:relative;user-select:none}
+.tab-icon{font-size:18px;line-height:1;transition:opacity .15s}
+.tab-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;transition:color .15s}
+.tab.active .tab-label{color:var(--blue)}
+.tab:not(.active) .tab-label{color:var(--dimmer)}
+.tab:not(.active) .tab-icon{opacity:.5}
+.tab-badge{position:absolute;top:4px;right:calc(50% - 18px);width:8px;height:8px;border-radius:4px;background:var(--red)}
+
+/* VIEWS */
+.view{flex:1;display:none;flex-direction:column;overflow:hidden}
+.view.active{display:flex}
+
+/* ─── CHAT VIEW ─── */
+.header{display:flex;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid rgba(0,118,255,.15);z-index:10;flex-shrink:0}
+.header-back{color:var(--blue);font-size:28px;font-weight:700;cursor:pointer;margin-right:8px;user-select:none}
+.header-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;margin-right:12px;border:2px solid rgba(255,255,255,.08)}
+.header-info{flex:1}.header-name{font-size:16px;font-weight:700;line-height:1.2}
+.header-presence{display:flex;align-items:center;gap:5px;margin-top:2px}
+.presence-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pp 2s ease infinite}
+@keyframes pp{0%,100%{opacity:1}50%{opacity:.5}}
+.header-status{font-size:12px;color:var(--dim)}
+.header-more{color:var(--dim);font-size:18px;letter-spacing:2px;cursor:pointer}
+.chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:3px}.chat-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+.msg-wrap{display:flex;flex-direction:column}
+.msg{max-width:78%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.5;animation:mi .3s ease}
+@keyframes mi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-me{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+.msg-them{align-self:flex-start;background:var(--elev);color:var(--text);border-bottom-left-radius:4px}
+.msg-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dimmer);margin-top:4px}
+.msg-time-r{align-self:flex-end}.msg-time-l{align-self:flex-start}
+.msg-system{align-self:center;background:rgba(0,118,255,.08);border:1px solid rgba(0,118,255,.15);color:#2E8FFF;font-family:'JetBrains Mono',monospace;font-size:11px;padding:6px 14px;border-radius:20px}
+.input-area{display:flex;align-items:center;padding:10px 12px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:8px}
+.btn-sd{width:40px;height:40px;border-radius:50%;background:rgba(0,118,255,.12);border:1px solid rgba(0,118,255,.35);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .15s;flex-shrink:0;user-select:none}
+.btn-sd:hover{background:rgba(0,118,255,.22);border-color:var(--blue)}
+.inp{flex:1;background:var(--elev);border:none;border-radius:24px;padding:10px 16px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;outline:none}
+.inp::placeholder{color:var(--dimmer)}
+.btn-send{padding:10px 16px;border-radius:24px;background:var(--elev);border:none;color:var(--dimmer);font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;flex-shrink:0}
+.btn-send.active{background:var(--blue);color:#fff}
+
+/* Showdown Card (in chat) */
+.sd{background:var(--card);border:1px solid var(--blue-dim);border-radius:14px;padding:20px;margin:4px 0;position:relative;overflow:visible;transition:border-color .5s,box-shadow .5s;align-self:stretch;box-shadow:0 0 24px var(--blue-glow),0 4px 20px rgba(0,0,0,.4)}
+.sd::before{content:'';position:absolute;inset:-1px;border-radius:15px;border:1.5px solid var(--blue);opacity:.4;animation:bp 3s ease-in-out infinite;pointer-events:none}
+@keyframes bp{0%,100%{opacity:.3}50%{opacity:.7}}
+.sd.state-losing{border-color:rgba(255,59,92,.4);box-shadow:0 0 20px rgba(255,59,92,.2),0 4px 20px rgba(0,0,0,.4)}
+.sd.state-losing::before{border-color:var(--red);animation-name:bp-red}
+@keyframes bp-red{0%,100%{opacity:.25}50%{opacity:.6}}
+.sd.state-draw{border-color:rgba(255,184,0,.5);box-shadow:0 0 24px var(--gold-glow),0 4px 20px rgba(0,0,0,.4)}
+.sd.state-draw::before{border-color:var(--gold)}
+.sd.state-won{border-color:rgba(255,184,0,.6);box-shadow:0 0 40px var(--gold-glow),0 4px 20px rgba(0,0,0,.4)}
+.sd.state-won::before{border-color:var(--gold);animation:none;opacity:.5}
+.gold-ov{position:absolute;inset:0;background:linear-gradient(135deg,#1A1200,#111118);opacity:0;transition:opacity .8s;pointer-events:none;border-radius:14px}
+.sd.state-won .gold-ov{opacity:1}
+.sd.state-lost{border-color:rgba(255,59,92,.4);box-shadow:0 0 24px rgba(255,59,92,.2),0 4px 20px rgba(0,0,0,.4)}
+.sd.state-lost::before{border-color:var(--red);animation:none;opacity:.3}
+.sd.state-lost .gold-ov{opacity:1;background:linear-gradient(135deg,#1A0A0A,#111118)}
+.sd.state-lost .sd-title{color:var(--red)}
+.sd.state-lost .sd-div{background:rgba(255,59,92,.2)}
+.sd.state-draw-done{border-color:rgba(255,184,0,.6);box-shadow:0 0 40px var(--gold-glow),0 4px 20px rgba(0,0,0,.4)}
+.sd.state-draw-done::before{border-color:var(--gold);animation:none;opacity:.5}
+.sd.state-draw-done .gold-ov{opacity:1;background:linear-gradient(135deg,#1A1400,#111118)}
+.sd.state-draw-done .sd-title{color:var(--gold)}
+.sd.state-draw-done .sd-div{background:rgba(255,184,0,.2)}
+.badge-defeated{background:rgba(255,59,92,.15);border:1px solid rgba(255,59,92,.4);color:var(--red);animation:wbi .5s cubic-bezier(.175,.885,.32,1.275)}
+.badge-draw-done{background:var(--gold-dim);border:1px solid rgba(255,184,0,.4);color:var(--gold);animation:wbi .5s cubic-bezier(.175,.885,.32,1.275)}
+.sd-rematch-btn.loss-btn{background:rgba(255,59,92,.12)!important;border-color:var(--red)!important;color:var(--red)!important}
+.sd-rematch-btn.loss-btn:hover{background:rgba(255,59,92,.2)!important}
+.sd-p.loss-score .sd-eaid{color:var(--red)}.sd-p.loss-score .sd-fill{background:var(--red)!important}.sd-p.loss-score .sd-sc{color:var(--red)}
+.particle-c{position:absolute;top:50%;left:50%;width:0;height:0;z-index:50;pointer-events:none}
+.particle{position:absolute;border-radius:50%;pointer-events:none}
+.confetti-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:300}
+.sd-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;position:relative;z-index:2}
+.sd-gl{display:flex;align-items:center;gap:8px}
+.sd-gd{width:8px;height:8px;border-radius:50%;background:var(--blue)}
+.sd-gn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim)}
+.badge{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px}
+.badge-live{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.3);color:var(--green)}
+.badge-live .bdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:lp 1.6s ease infinite}
+@keyframes lp{0%,100%{opacity:1}50%{opacity:.2}}
+.badge-live-red{background:rgba(255,59,92,.1);border-color:rgba(255,59,92,.3);color:var(--red)}
+.badge-live-red .bdot{background:var(--red)}
+.badge-deadlock{background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.4);color:var(--gold);animation:dp 1s ease infinite}
+@keyframes dp{0%,100%{opacity:1}50%{opacity:.7}}
+.badge-winner{background:var(--gold-dim);border:1px solid rgba(255,184,0,.4);color:var(--gold);animation:wbi .5s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes wbi{from{transform:scale(0)}to{transform:scale(1)}}
+.sd-title{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:var(--text);letter-spacing:.5px;margin-bottom:12px;transition:color .8s;position:relative;z-index:2}
+.sd.state-won .sd-title{color:var(--gold)}
+.losing-banner{background:rgba(255,59,92,.08);border-left:3px solid var(--red);padding:8px 12px;margin-bottom:12px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--red);position:relative;z-index:2}
+.draw-label{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--gold);text-align:center;margin-bottom:8px;position:relative;z-index:2}
+.sd-div{height:1px;background:var(--border);margin-bottom:16px;transition:background .5s;position:relative;z-index:2}
+.sd.state-won .sd-div{background:rgba(255,184,0,.2)}
+.sd.state-draw .sd-div{background:rgba(255,184,0,.15)}
+.sd-p{display:flex;align-items:center;margin-bottom:14px;position:relative}
+.sd-aw{position:relative;width:44px;height:44px;margin-right:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.sd-av{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.1);object-fit:cover;transition:border-color .4s}
+.sd-p.winner .sd-av{border-color:var(--gold)}
+.sd-p.draw-ring .sd-av{border-color:rgba(255,184,0,.6)}
+.sd-crown{position:absolute;top:-8px;right:-4px;font-size:16px;opacity:0;transform:translateY(-15px) scale(0);transition:all .5s cubic-bezier(.175,.885,.32,1.275)}
+.sd-p.winner .sd-crown{opacity:1;transform:translateY(0) scale(1)}
+.sd-av-ring{position:absolute;top:-1px;left:1px;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,184,0,.5);opacity:0;transition:opacity .6s}
+.sd-p.winner .sd-av-ring,.sd-p.draw-ring .sd-av-ring{opacity:1}
+.sd-bs{flex:1;margin-right:12px}
+.sd-eaid{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:6px;transition:color .4s}
+.sd-p.winner .sd-eaid{color:var(--gold)}.sd-p.losing .sd-eaid{color:var(--red)}
+.sd-track{height:8px;background:var(--elev);border-radius:4px;overflow:hidden;position:relative}
+.sd-fill{height:100%;border-radius:4px;background:var(--blue);width:0%;transition:width .6s cubic-bezier(.34,1.56,.64,1),background .4s}
+.sd-p.winner .sd-fill{background:var(--gold)}.sd-p.losing .sd-fill{background:var(--red)}.sd-p.draw-bar .sd-fill{background:var(--gold)}
+.sd-sc{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text);min-width:50px;text-align:right;transition:color .4s,transform .15s;flex-shrink:0}
+.sd-p.winner .sd-sc{color:var(--gold)}.sd-p.losing .sd-sc{color:var(--red)}
+.sd-sc.pop{transform:scale(1.3)}.sd-sc-sl{color:var(--dimmer);font-weight:400}
+.float-inc{position:absolute;right:0;top:-8px;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:800;color:var(--green);pointer-events:none;animation:fu .8s ease forwards}
+@keyframes fu{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-30px)}}
+.sd-sim{display:flex;justify-content:center;margin-top:16px;position:relative;z-index:2}
+.sd-sim-btn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--blue);background:rgba(0,118,255,.1);border:1px solid var(--blue);border-radius:20px;padding:10px 20px;cursor:pointer;transition:all .15s;user-select:none}
+.sd-sim-btn:hover{background:rgba(0,118,255,.18)}.sd-sim-btn:active{transform:scale(.96)}
+.sd-sim-btn:disabled{color:rgba(0,118,255,.4);border-color:rgba(0,118,255,.3);background:rgba(0,118,255,.05);cursor:default}
+.sd-win-content{text-align:center;margin-bottom:4px;position:relative;z-index:2}
+.sd-win-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--dimmer);margin-top:16px;margin-bottom:8px}
+.sd-win-scores{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:700;margin-bottom:4px}
+.sd-win-scores .w{color:var(--gold)}.sd-win-scores .d{color:var(--dim)}
+.sd-rematch-btn{display:inline-block;background:rgba(255,184,0,.12);border:1px solid rgba(255,184,0,.4);border-radius:20px;padding:10px 24px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;margin-top:12px;transition:all .15s;user-select:none}
+.sd-rematch-btn:hover{background:rgba(255,184,0,.2)}
+.sd-rematch-btn.sent{background:rgba(0,230,118,.12);border-color:#00E676;color:#00E676;cursor:default}
+.sd-rematch-btn.sent:hover{background:rgba(0,230,118,.12)}
+.sd-rematch-tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;position:relative;z-index:2}
+.sd-win-ts{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dimmer);margin-top:8px}
+.sd-ft{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.04);position:relative;z-index:2}
+.sd-ft-l{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--dimmer)}
+.sd-ft-v{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+@keyframes cardShake{0%{transform:translateX(0)}10%{transform:translateX(8px)}20%{transform:translateX(-8px)}30%{transform:translateX(6px)}40%{transform:translateX(-6px)}50%{transform:translateX(3px)}60%{transform:translateX(0)}100%{transform:translateX(0)}}
+.shake{animation:cardShake .35s ease}.shake-sm{animation:cardShake .2s ease}
+
+/* ─── SHOWDOWNS INBOX VIEW ─── */
+.si-header{background:var(--card);border-bottom:1px solid rgba(0,118,255,.15);padding:16px 20px;flex-shrink:0}
+.si-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:var(--text);letter-spacing:.5px;margin-bottom:4px}
+.si-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:1px}
+.si-filters{display:flex;gap:8px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0;overflow-x:auto}
+.si-filters::-webkit-scrollbar{display:none}
+.si-pill{padding:8px 18px;border-radius:20px;background:var(--elev);border:1px solid rgba(255,255,255,.08);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--dim);cursor:pointer;transition:all .15s;white-space:nowrap;user-select:none;letter-spacing:1px}
+.si-pill:hover{background:var(--elev2)}
+.si-pill.sel{background:rgba(0,118,255,.15);border-color:var(--blue);color:var(--blue)}
+.si-list{flex:1;overflow-y:auto;padding:16px 0}
+.si-list::-webkit-scrollbar{width:3px}.si-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+
+/* Inbox Card */
+.ic{display:flex;align-items:center;background:var(--card);border:1px solid rgba(0,118,255,.15);border-radius:12px;padding:16px;margin:0 16px 12px;animation:mi .3s ease;transition:opacity .3s,transform .3s}
+.ic.removing{opacity:0;transform:translateX(40px)}
+.ic-av{width:44px;height:44px;border-radius:22px;border:2px solid rgba(255,255,255,.1);object-fit:cover;flex-shrink:0}
+.ic-av.won{border-color:var(--gold)}
+.ic-av.pending{border-color:var(--blue);animation:avp 2.4s ease infinite}
+@keyframes avp{0%,100%{border-color:var(--blue);box-shadow:0 0 0 rgba(0,118,255,0)}50%{border-color:rgba(0,118,255,.5);box-shadow:0 0 12px rgba(0,118,255,.3)}}
+.ic-mid{flex:1;margin:0 12px;min-width:0}
+.ic-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.ic-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic-game{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dimmer);white-space:nowrap;flex-shrink:0;margin-left:8px}
+.ic-chal{font-size:13px;color:var(--dim);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic-track{height:4px;background:var(--elev);border-radius:2px;overflow:hidden;position:relative}
+.ic-fill{position:absolute;top:0;left:0;height:100%;border-radius:2px}
+.ic-fill-me{background:var(--blue);z-index:2}
+.ic-fill-opp{background:var(--red);z-index:1}
+.ic-right{display:flex;flex-direction:column;align-items:flex-end;min-width:64px;flex-shrink:0}
+.ic-score-frac{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;margin-bottom:2px;text-align:right}
+.ic-gap{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:4px;text-align:right}
+.ic-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dimmer)}
+.ic-accept{background:var(--blue);border:none;border-radius:8px;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#fff;cursor:pointer;margin-bottom:6px;transition:all .15s}
+.ic-accept:hover{filter:brightness(1.1)}
+.ic-decline{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--red);background:none;border:none;cursor:pointer}
+.ic-crown{font-size:20px;margin-bottom:4px}.ic-loss{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--red);margin-bottom:4px}
+.ic-fscore{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--dim);margin-bottom:4px}
+.ic-rematch{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer}
+.si-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px}
+.si-empty-emoji{font-size:48px;margin-bottom:16px}
+.si-empty-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;text-align:center}
+.si-empty-sub{font-size:14px;color:var(--dim);text-align:center;margin-bottom:24px}
+.si-empty-btn{background:var(--blue);border:none;border-radius:10px;padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:#fff;cursor:pointer;letter-spacing:1px}
+
+/* Toast */
+.toast-c{position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--elev);border:1px solid rgba(0,118,255,.2);border-radius:12px;padding:12px 18px;min-width:280px;box-shadow:0 8px 32px rgba(0,0,0,.5);animation:ti .4s ease,to .4s ease 2.6s forwards}
+@keyframes ti{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes to{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
+.toast-t{font-size:13px;font-weight:700;margin-bottom:2px}.toast-s{font-size:11px;color:var(--dim)}
+
+/* Creation Sheet */
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
+.sheet-bg.open{opacity:1;pointer-events:auto}
+.csheet{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-top-left-radius:20px;border-top-right-radius:20px;padding:0 20px 32px;z-index:101;transform:translateY(100%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);border-top:1px solid rgba(0,118,255,.2);max-height:80vh;overflow-y:auto}
+.csheet.open{transform:translateY(0)}
+.sh-handle{width:40px;height:4px;border-radius:2px;background:var(--dimmer);margin:12px auto 8px}
+.sh-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+.sh-title{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--blue)}
+.sh-close{width:32px;height:32px;border-radius:50%;background:var(--elev);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--dim);font-size:14px;font-weight:600;border:none}
+.sh-dots{display:flex;gap:6px;margin-bottom:16px}
+.sh-dot{width:8px;height:8px;border-radius:50%;background:var(--elev);transition:background .3s}.sh-dot.active{background:var(--blue)}
+.vs-row{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(0,118,255,.06);border:1px solid rgba(0,118,255,.15);border-radius:8px;margin-bottom:20px}
+.vs-l{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:1.5px;color:var(--dimmer)}.vs-n{font-size:14px;font-weight:700}
+.step-l{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--dimmer);margin-bottom:12px}
+.g-grid{display:flex;gap:10px;margin-bottom:20px}
+.g-card{flex:1;background:var(--elev);border-radius:12px;padding:16px 8px;text-align:center;border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:all .2s}
+.g-card.sel{border-color:var(--sel-c,var(--blue));box-shadow:0 0 16px var(--sel-g,var(--blue-glow))}
+.g-icon{font-size:28px;margin-bottom:8px}
+.g-title{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+.g-card.sel .g-title{color:var(--sel-c,var(--blue))}
+.step-sec{margin-bottom:20px;overflow:hidden;max-height:0;opacity:0;transition:max-height .4s ease,opacity .3s}
+.step-sec.vis{max-height:200px;opacity:1}
+.m-row,.t-row{display:flex;flex-wrap:wrap;gap:8px}
+.m-pill,.t-pill{padding:10px 16px;border-radius:20px;background:var(--elev);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.t-pill{flex:1;text-align:center;font-size:18px;font-weight:800;font-family:'Barlow Condensed',sans-serif;padding:14px 10px;border-radius:12px}
+.m-pill.sel,.t-pill.sel{background:var(--sel-c,var(--blue));border-color:var(--sel-c,var(--blue));color:#fff}
+.cr-btn{width:100%;padding:16px;border-radius:12px;border:none;font-size:14px;font-weight:800;color:#fff;letter-spacing:1px;text-transform:uppercase;cursor:pointer;margin-top:8px;opacity:0;transform:scale(.95);pointer-events:none;transition:all .3s}
+.cr-btn.vis{opacity:1;transform:scale(1);pointer-events:auto}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="toast-c" id="toasts"></div>
+
+  <!-- ═══ CHAT VIEW ═══ -->
+  <div class="view active" id="viewChat">
+    <div class="header">
+      <div class="header-back">‹</div>
+      <img class="header-avatar" src="https://i.pravatar.cc/80?u=shadowranger" alt="">
+      <div class="header-info"><div class="header-name">ShadowRanger</div><div class="header-presence"><div class="presence-dot"></div><div class="header-status">Online · EA SPORTS FC 26</div></div></div>
+      <div class="header-more">•••</div>
+    </div>
+    <div class="chat-area" id="chat">
+      <div class="msg-wrap"><div class="msg msg-them">Hey! Ready for FC 26?</div><div class="msg-time msg-time-l">2:41 PM</div></div>
+      <div class="msg-wrap"><div class="msg msg-me">Let's do it! 🎮</div><div class="msg-time msg-time-r">2:42 PM</div></div>
+      <div class="msg-wrap"><div class="msg msg-them">Bet you can't outscore me this week 😤</div><div class="msg-time msg-time-l">2:44 PM</div></div>
+      <div class="msg-wrap"><div class="msg msg-me">You're on. Let's make it official</div><div class="msg-time msg-time-r">2:45 PM</div></div>
+      <div class="sd" id="sdCard">
+        <div class="gold-ov"></div><div class="particle-c" id="particles"></div>
+        <div class="sd-h"><div class="sd-gl"><div class="sd-gd"></div><div class="sd-gn">EA SPORTS FC 26</div></div><div class="badge badge-live" id="sdBadge"><div class="bdot"></div><span>LIVE</span></div></div>
+        <div class="sd-title" id="sdTitle">First to 10 Goals Scored</div>
+        <div id="losingBanner" style="display:none" class="losing-banner">🔥 You're behind — go play.</div>
+        <div class="sd-div"></div>
+        <div class="sd-p" id="p0"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=me_player" alt=""><div class="sd-crown">👑</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">YOU</div><div class="sd-track"><div class="sd-fill" id="f0"></div></div></div><div class="sd-sc" id="s0">3<span class="sd-sc-sl">/</span>10</div></div>
+        <div class="sd-p" id="p1"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=shadowranger" alt=""><div class="sd-crown">👑</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">SHADOWRANGER</div><div class="sd-track"><div class="sd-fill" id="f1"></div></div></div><div class="sd-sc" id="s1">6<span class="sd-sc-sl">/</span>10</div></div>
+        <div id="drawLabel" class="draw-label" style="display:none"></div>
+        <div id="winContent" class="sd-win-content" style="display:none"></div>
+        <div class="sd-sim" id="simWrap"><button class="sd-sim-btn" id="simBtn">SIMULATE EADP TELEMETRY</button></div>
+        <div class="sd-ft"><div class="sd-ft-l" id="ftL">EXPIRES</div><div class="sd-ft-v" id="ftV">7 days remaining</div></div>
+      </div>
+      <div class="msg-wrap"><div class="msg msg-them">You're going down 🔥</div><div class="msg-time msg-time-l">2:46 PM</div></div>
+    </div>
+    <div class="input-area">
+      <div class="btn-sd" id="btnSD">⚡</div>
+      <input class="inp" id="inp" placeholder="Type a message...">
+      <button class="btn-send" id="btnSend">Send</button>
+    </div>
+  </div>
+
+  <!-- ═══ SHOWDOWNS INBOX VIEW ═══ -->
+  <div class="view" id="viewShowdowns">
+    <div class="si-header">
+      <div class="si-title">SHOWDOWNS</div>
+      <div class="si-sub" id="siSub">2 active · 2 pending</div>
+    </div>
+    <div class="si-filters">
+      <div class="si-pill" data-f="pending">PENDING</div>
+      <div class="si-pill sel" data-f="active">ACTIVE</div>
+      <div class="si-pill" data-f="completed">COMPLETED</div>
+    </div>
+    <div class="si-list" id="siList"></div>
+  </div>
+
+  <!-- ═══ TAB BAR ═══ -->
+  <div class="tab-bar">
+    <div class="tab active" data-tab="viewChat">
+      <div class="tab-icon">💬</div>
+      <div class="tab-label">CHAT</div>
+    </div>
+    <div class="tab" data-tab="viewShowdowns">
+      <div class="tab-icon">⚡</div>
+      <div class="tab-badge" id="tabBadge"></div>
+      <div class="tab-label">SHOWDOWNS</div>
+    </div>
+  </div>
+
+  <!-- Creation Sheet -->
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="csheet" id="csheet">
+    <div class="sh-handle"></div>
+    <div class="sh-hdr"><div class="sh-title">CREATE SHOWDOWN</div><button class="sh-close" id="shClose">✕</button></div>
+    <div class="sh-dots"><div class="sh-dot active" id="d0"></div><div class="sh-dot" id="d1"></div><div class="sh-dot" id="d2"></div></div>
+    <div class="vs-row"><span class="vs-l">CHALLENGING</span><span class="vs-n">ShadowRanger</span></div>
+    <div class="step-l">PICK YOUR GAME</div>
+    <div class="g-grid" id="gGrid">
+      <div class="g-card" data-game="EA SPORTS FC 26" data-color="#0076FF" data-metrics="Goals Scored,Assists,Wins" style="--sel-c:#0076FF;--sel-g:rgba(0,118,255,.25)"><div class="g-icon">⚽</div><div class="g-title">EA SPORTS FC 26</div></div>
+      <div class="g-card" data-game="Battlefield 6" data-color="#FF6B00" data-metrics="Eliminations,Damage Dealt,Wins" style="--sel-c:#FF6B00;--sel-g:rgba(255,107,0,.25)"><div class="g-icon">🎯</div><div class="g-title">Battlefield 6</div></div>
+      <div class="g-card" data-game="Apex Legends" data-color="#FF3B5C" data-metrics="Eliminations,Damage Dealt,Wins" style="--sel-c:#FF3B5C;--sel-g:rgba(255,59,92,.25)"><div class="g-icon">🔥</div><div class="g-title">Apex Legends</div></div>
+    </div>
+    <div class="step-sec" id="mStep"><div class="step-l">PICK YOUR STAT</div><div class="m-row" id="mRow"></div></div>
+    <div class="step-sec" id="tStep"><div class="step-l">SET THE TARGET</div><div class="t-row" id="tRow"></div></div>
+    <button class="cr-btn" id="crBtn">DROP THE BOUNTY ⚡</button>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const chat=$('#chat');
+
+/* ═══ MOCK DATA ═══ */
+const MOCK=[
+  {id:'a1',chatId:'chat_neonviper42',status:'active',game:'EA SPORTS FC 26',color:'#0076FF',metric:'Goals Scored',target:10,me:8,opp:5,oppId:'NeonViper_42',oppAv:'neonviper42',exp:'4d 12h left'},
+  {id:'a2',chatId:'chat_blazestrike',status:'active',game:'Battlefield 6',color:'#FF6B00',metric:'Eliminations',target:10,me:3,opp:7,oppId:'BlazeStrike',oppAv:'blazestrike',exp:'6d 3h left'},
+  {id:'p1',chatId:'chat_phantomace',status:'pending',game:'Apex Legends',color:'#FF3B5C',metric:'Damage Dealt',target:15,me:0,opp:0,oppId:'xX_PhantomAce_Xx',oppAv:'phantomace',exp:'7d left'},
+  {id:'p2',chatId:'chat_glitchhunter99',status:'pending',game:'EA SPORTS FC 26',color:'#0076FF',metric:'Assists',target:10,me:0,opp:0,oppId:'GlitchHunter99',oppAv:'glitchhunter99',exp:'7d left'},
+  {id:'c1',chatId:'chat_frostbytex',status:'completed',game:'EA SPORTS FC 26',color:'#0076FF',metric:'Goals Scored',target:10,me:10,opp:7,oppId:'FrostByte_X',oppAv:'frostbytex',won:true},
+  {id:'c2',chatId:'chat_shadowranger',status:'completed',game:'Apex Legends',color:'#FF3B5C',metric:'Eliminations',target:10,me:5,opp:10,oppId:'ShadowRanger',oppAv:'shadowranger',won:false},
+];
+let items=[...MOCK];
+let curFilter='active';
+let activeChatId='chat_shadowranger',activeChatName='ShadowRanger',activeChatAv='https://i.pravatar.cc/80?u=shadowranger';
+const CHAT_DATA={
+chat_shadowranger:{name:'ShadowRanger',av:'https://i.pravatar.cc/80?u=shadowranger',status:'Online \u00B7 EA SPORTS FC 26',gn:'EA SPORTS FC 26',gc:'#0076FF',mt:'Goals Scored',tgt:10,me:3,opp:6,msgs:[{s:'them',t:"Hey! Ready for FC 26?"},{s:'me',t:"Let's do it! \uD83C\uDFAE"},{s:'them',t:"Bet you can't outscore me this week \uD83D\uDE24"},{s:'me',t:"You're on. Let's make it official"}],post:[{s:'them',t:"You're going down \uD83D\uDD25"}]},
+chat_neonviper42:{name:'NeonViper_42',av:'https://i.pravatar.cc/80?u=neonviper42',status:'In Game \u00B7 EA SPORTS FC 26',gn:'EA SPORTS FC 26',gc:'#0076FF',mt:'Goals Scored',tgt:10,me:8,opp:5,msgs:[{s:'them',t:"You up for some FC 26?"},{s:'me',t:"Always ready \uD83D\uDCAA"},{s:'them',t:"Let's see who hits 10 goals first"},{s:'me',t:"Challenge accepted"}],post:[{s:'them',t:"I'm catching up \uD83D\uDC40"}]},
+chat_blazestrike:{name:'BlazeStrike',av:'https://i.pravatar.cc/80?u=blazestrike',status:'In Game \u00B7 Battlefield 6',gn:'Battlefield 6',gc:'#FF6B00',mt:'Eliminations',tgt:10,me:3,opp:7,msgs:[{s:'them',t:"Squad up on BF6?"},{s:'me',t:"Let's go \uD83C\uDFAF"},{s:'them',t:"Race to 10 elims?"},{s:'me',t:"You're on"}],post:[{s:'them',t:"Better bring your A-game \uD83D\uDD25"}]},
+chat_frostbytex:{name:'FrostByte_X',av:'https://i.pravatar.cc/80?u=frostbytex',status:'Online \u00B7 EA SPORTS FC 26',gn:'EA SPORTS FC 26',gc:'#0076FF',mt:'Goals Scored',tgt:10,me:10,opp:7,msgs:[{s:'them',t:"GG on that last match"},{s:'me',t:"Too easy \uD83D\uDC51"},{s:'them',t:"Run it back?"},{s:'me',t:"Let's go again"}],post:[]},
+chat_phantomace:{name:'xX_PhantomAce_Xx',av:'https://i.pravatar.cc/80?u=phantomace',status:'Away \u00B7 Apex Legends',gn:'Apex Legends',gc:'#FF3B5C',mt:'Damage Dealt',tgt:15,me:0,opp:0,msgs:[{s:'them',t:"Wanna run some Apex?"},{s:'me',t:"Sure, when?"},{s:'them',t:"Now! I'll send you a challenge"}],post:[]},
+chat_glitchhunter99:{name:'GlitchHunter99',av:'https://i.pravatar.cc/80?u=glitchhunter99',status:'Online \u00B7 EA SPORTS FC 26',gn:'EA SPORTS FC 26',gc:'#0076FF',mt:'Assists',tgt:10,me:0,opp:0,msgs:[{s:'them',t:"FC 26 assist challenge?"},{s:'me',t:"I'm in \uD83C\uDFAE"},{s:'them',t:"Sending the bounty now"}],post:[]},
+};
+
+/* ═══ TAB SWITCHING ═══ */
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{
+  $$('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $(`#${t.dataset.tab}`).classList.add('active');
+}));
+
+/* ═══ SHOWDOWNS INBOX ═══ */
+function timeRem(d){return d.exp||''}
+function updateCounts(){
+  const ac=items.filter(i=>i.status==='active').length;
+  const pc=items.filter(i=>i.status==='pending').length;
+  $('#siSub').textContent=`${ac} active · ${pc} pending`;
+  $('#tabBadge').style.display=pc>0?'block':'none';
+}
+function renderList(){
+  const list=$('#siList');
+  const filtered=items.filter(i=>i.status===curFilter);
+  list.style.opacity='0';
+  setTimeout(()=>{
+    list.innerHTML='';
+    if(filtered.length===0){
+      list.innerHTML=`<div class="si-empty"><div class="si-empty-emoji">⚡</div><div class="si-empty-title">NO ${curFilter.toUpperCase()} SHOWDOWNS</div><div class="si-empty-sub">Drop a bounty in any chat to get started</div><button class="si-empty-btn">CREATE SHOWDOWN</button></div>`;
+      list.style.opacity='1';return;
+    }
+    filtered.forEach(d=>{
+      const meR=d.target>0?Math.min(d.me/d.target,1)*100:0;
+      const opR=d.target>0?Math.min(d.opp/d.target,1)*100:0;
+      const gap=d.me-d.opp;
+      const el=document.createElement('div');el.className='ic';el.dataset.id=d.id;
+      let rightHtml='';
+      if(d.status==='pending'){
+        rightHtml=`<button class="ic-accept" data-id="${d.id}">ACCEPT</button><button class="ic-decline" data-id="${d.id}">DECLINE</button>`;
+      }else if(d.status==='active'){
+        const gt=gap>0?`+${gap} UP`:gap<0?`${gap} DOWN`:'TIED';
+        const gc=gap>0?'#00E676':gap<0?'#FF3B5C':'#FFB800';
+        rightHtml=`<div class="ic-score-frac" style="color:${gc}">${d.me} / ${d.target}</div><div class="ic-gap" style="color:${gc}">${gt}</div><div class="ic-time">${d.exp}</div>`;
+      }else{
+        const icon=d.won?'<div class="ic-crown">👑</div>':'<div class="ic-loss">L</div>';
+        rightHtml=`${icon}<div class="ic-fscore">${d.me} — ${d.opp}</div><button class="ic-rematch">REMATCH</button>`;
+      }
+      const avClass=d.status==='completed'&&d.won?'ic-av won':d.status==='pending'?'ic-av pending':'ic-av';
+      el.innerHTML=`<img class="${avClass}" src="https://i.pravatar.cc/80?u=${d.oppAv}" alt=""><div class="ic-mid"><div class="ic-top"><div class="ic-name">${d.oppId}</div><div class="ic-game">${d.game}</div></div><div class="ic-chal">First to ${d.target} ${d.metric}</div><div class="ic-track">${d.opp>d.me?`<div class="ic-fill ic-fill-opp" style="width:${opR}%"></div>`:''}<div class="ic-fill ic-fill-me" style="width:${meR}%"></div></div></div><div class="ic-right">${rightHtml}</div>`;
+      el.style.cursor='pointer';
+      list.appendChild(el);
+    });
+    list.querySelectorAll('.ic-accept').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();const id=e.target.dataset.id;
+      const it=items.find(i=>i.id===id);if(it){it.status='active';it.exp='7d left';}
+      updateCounts();renderList();
+      toast('Challenge Accepted!','The Showdown is now live');
+    }));
+    list.querySelectorAll('.ic-decline').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();const id=e.target.dataset.id;
+      const card=list.querySelector(`.ic[data-id="${id}"]`);
+      if(card){card.classList.add('removing');setTimeout(()=>{items=items.filter(i=>i.id!==id);updateCounts();renderList();},300);}
+    }));
+    list.querySelectorAll('.ic').forEach(c=>{
+      const d=items.find(i=>i.id===c.dataset.id);
+      if(d){c.addEventListener('click',()=>{loadChat(d.chatId);$$('.tab')[0].click();toast(`Chat with ${d.oppId}`,`Opening ${d.chatId}…`);});}
+    });
+    list.style.opacity='1';
+  },150);
+}
+$$('.si-pill').forEach(p=>p.addEventListener('click',()=>{
+  $$('.si-pill').forEach(x=>x.classList.remove('sel'));p.classList.add('sel');
+  p.style.transform='scale(1.04)';setTimeout(()=>p.style.transform='',150);
+  curFilter=p.dataset.f;renderList();
+}));
+updateCounts();renderList();
+
+/* ═══ CHAT: Showdown card state machine ═══ */
+const P=[{el:'p0',fill:'f0',score:'s0',cur:3,tgt:10,name:'You'},{el:'p1',fill:'f1',score:'s1',cur:6,tgt:10,name:'ShadowRanger'}];
+let pressCount=0,done=false,simming=false;
+function scroll(){setTimeout(()=>chat.scrollTop=chat.scrollHeight,50)}
+scroll();
+function toast(t,s){const c=$('#toasts'),d=document.createElement('div');d.className='toast';d.innerHTML=`<div class="toast-t">${t}</div><div class="toast-s">${s}</div>`;c.appendChild(d);setTimeout(()=>d.remove(),3200)}
+function addMsg(txt,type='them'){const w=document.createElement('div');w.className='msg-wrap';const d=document.createElement('div');d.className=`msg msg-${type}`;d.textContent=txt;const tm=document.createElement('div');tm.className=`msg-time ${type==='me'?'msg-time-r':'msg-time-l'}`;tm.textContent=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});w.appendChild(d);w.appendChild(tm);chat.appendChild(w);scroll();}
+function getState(){if(done){const lw=P[0].cur>=P[0].tgt,ow=P[1].cur>=P[1].tgt;if(lw&&ow)return'draw-done';if(lw)return'win';return'loss';}if(P[0].cur===P[1].cur&&P[0].cur>0)return'draw';if(P[0].cur<P[1].cur)return'losing';return'active';}
+let wonTime=null;
+function timeAgo(d){if(!d)return'';const diff=Math.max(0,Date.now()-d.getTime()),mins=Math.floor(diff/60000);if(mins<1)return'just now';if(mins<60)return`${mins} min${mins>1?'s':''} ago`;const hrs=Math.floor(mins/60);return`${hrs} hr${hrs>1?'s':''} ago`;}
+function applyState(){const st=getState(),sdCard=$('#sdCard');sdCard.className='sd';const scm={win:'state-won',loss:'state-lost','draw-done':'state-draw-done',draw:'state-draw',losing:'state-losing'};if(scm[st])sdCard.classList.add(scm[st]);const badge=$('#sdBadge');if(st==='win'){badge.className='badge badge-winner';badge.innerHTML='\uD83D\uDC51 WINNER';}else if(st==='loss'){badge.className='badge badge-defeated';badge.innerHTML='\uD83D\uDC80 DEFEATED';}else if(st==='draw-done'){badge.className='badge badge-draw-done';badge.innerHTML='\u26A1 DRAW';}else if(st==='draw'){badge.className='badge badge-deadlock';badge.innerHTML='\u26A1 DEADLOCK';}else if(st==='losing'){badge.className='badge badge-live badge-live-red';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}else{badge.className='badge badge-live';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}$('#losingBanner').style.display=st==='losing'?'block':'none';const dl=$('#drawLabel');if(st==='draw'){dl.style.display='block';dl.textContent=`Tied at ${P[0].cur} \u2014 first to move wins`;}else{dl.style.display='none';}P.forEach((p,i)=>{const el=$(`#${p.el}`);el.className='sd-p';if(st==='win'&&i===0)el.classList.add('winner');if(st==='loss'&&i===1)el.classList.add('winner');if(st==='loss'&&i===0)el.classList.add('loss-score');if(st==='draw-done'){el.classList.add('draw-ring','draw-bar','winner');}if(st==='draw'){el.classList.add('draw-ring','draw-bar');}if(st==='losing'&&i===0)el.classList.add('losing');});const isCmp=st==='win'||st==='loss'||st==='draw-done';$('#simWrap').style.display=isCmp?'none':'flex';const wc=$('#winContent');if(isCmp){const isL=st==='loss',isD=st==='draw-done';const f1=isL?P[1].cur:P[0].cur,f2=isL?P[0].cur:P[1].cur;const c1='var(--gold)',c2=isL?'var(--red)':'var(--dim)';const rc=isL?'sd-rematch-btn loss-btn':'sd-rematch-btn';const tp=isL?'Lost':isD?'Draw':'Won';wc.style.display='block';wc.innerHTML=`<div class="sd-win-label">FINAL SCORE</div><div class="sd-win-scores"><span style="color:${c1}">${f1}</span><span style="color:${c2}"> \u2014 ${f2}</span></div><button class="${rc}" id="rematchBtn">\u26A1 REMATCH</button><div class="sd-win-ts">${tp} ${timeAgo(wonTime)} \u00B7 EA SPORTS FC 26</div>`;$('#rematchBtn').addEventListener('click',function(){handleRematch(this);});$('#ftL').textContent='COMPLETED';$('#ftV').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}else{wc.style.display='none';wc.innerHTML='';}}
+function updateBar(p){const r=Math.min(p.cur/p.tgt,1);$(`#${p.fill}`).style.width=`${r*100}%`;const sc=$(`#${p.score}`);sc.innerHTML=`${p.cur}<span class="sd-sc-sl">/</span>${p.tgt}`;sc.classList.add('pop');setTimeout(()=>sc.classList.remove('pop'),200);}
+function showFloat(idx,inc){const el=$(`#${P[idx].el}`);const f=document.createElement('div');f.className='float-inc';f.textContent=`+${inc}`;el.appendChild(f);setTimeout(()=>f.remove(),900);}
+function explode(){const c=$('#particles'),cols=['#FFB800','#FF9500','#FFDD00','#FFFFFF','#FFA726','#FFE082'];for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';const sz=4+Math.random()*6,a=(i/30)*Math.PI*2+(Math.random()-.5)*.5,dist=60+Math.random()*120;const tx=Math.cos(a)*dist,ty=Math.sin(a)*dist-20,dur=700+Math.random()*500,del=Math.random()*200;p.style.cssText=`width:${sz}px;height:${sz}px;background:${cols[i%cols.length]};border-radius:${Math.random()>.5?'50%':'2px'};left:0;top:0;`;c.appendChild(p);p.animate([{transform:'translate(0,0) scale(0)',opacity:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.1},{transform:`translate(${tx}px,${ty}px) scale(.5)`,opacity:0}],{duration:dur,delay:del,easing:'cubic-bezier(.25,.46,.45,.94)',fill:'forwards'});setTimeout(()=>p.remove(),dur+del+100);}}
+function confettiCelebration(){const layer=document.createElement('div');layer.className='confetti-layer';$('.phone').appendChild(layer);const cols=['#FFB800','#FF9500','#FFDD00','#FFFFFF','#0076FF','#00E676','#FF3B5C','#FFA726','#E040FB','#40C4FF','#FFE082','#69F0AE'];const ph=layer.clientHeight||900;for(let wave=0;wave<3;wave++){const count=wave===0?60:wave===1?50:40;for(let i=0;i<count;i++){const p=document.createElement('div');const w=5+Math.random()*9,h=Math.random()>.4?w:w*(1.5+Math.random()*1.5);const x=Math.random()*100,del=wave*2500+Math.random()*2000,dur=2500+Math.random()*4500;const drift=(Math.random()-.5)*240,spin=(Math.random()-.5)*1800;p.style.cssText=`position:absolute;left:${x}%;top:-20px;width:${w}px;height:${h}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>.3?'2px':'50%'};opacity:0;`;layer.appendChild(p);p.animate([{transform:'translate(0,0) rotate(0deg)',opacity:0},{opacity:1,offset:.04},{opacity:1,offset:.65},{transform:`translate(${drift}px,${ph+40}px) rotate(${spin}deg)`,opacity:0}],{duration:dur,delay:del,easing:'cubic-bezier(.22,.61,.36,1)',fill:'forwards'});}}setTimeout(()=>layer.remove(),12000);}
+function handleRematch(btn){if(btn.classList.contains('sent'))return;btn.classList.add('sent');btn.textContent='REMATCH SENT \u2713';spawnRematchCard('EA SPORTS FC 26','#0076FF','Goals Scored',10);toast('Rematch Dropped!','New Showdown created below');}
+function triggerWin(idx){done=true;wonTime=new Date();pressCount=0;const sdCard=$('#sdCard');sdCard.classList.add('shake');setTimeout(()=>sdCard.classList.remove('shake'),400);if(idx===0){explode();confettiCelebration();}applyState();const isMe=idx===0;toast(isMe?`\uD83C\uDFC6 ${P[0].name} claimed the crown!`:`\uD83D\uDC80 ${P[1].name} won the Showdown`,isMe?'The Showdown is over. Rematch?':'Better luck next time. Rematch?');const wl=["GET REKT \uD83D\uDC51\uD83D\uDD25","Too easy. Rematch?","Crown belongs to me \uD83C\uDFC6"],ll=["...I want a rematch right now","You got lucky. Again?","Next time you're done for"];setTimeout(()=>addMsg(isMe?wl[Math.floor(Math.random()*wl.length)]:ll[Math.floor(Math.random()*ll.length)],'me'),1200);setTimeout(()=>addMsg(isMe?ll[Math.floor(Math.random()*ll.length)]:wl[Math.floor(Math.random()*wl.length)],'them'),2800);}
+$('#simBtn').addEventListener('click',()=>{if(simming||done)return;simming=true;$('#simBtn').disabled=true;$('#simBtn').textContent='PROCESSING TELEMETRY...';pressCount++;const cnt=pressCount;setTimeout(()=>{let idx,inc;if(cnt===1){idx=1;inc=2;P[1].cur=Math.min(P[1].cur+2,P[1].tgt);}else if(cnt===2){idx=0;inc=Math.max(P[1].cur-P[0].cur,1);P[0].cur=Math.min(P[0].cur+inc,P[0].tgt);}else{idx=Math.floor(Math.random()*2);inc=Math.floor(Math.random()*2)+1;P[idx].cur=Math.min(P[idx].cur+inc,P[idx].tgt);}updateBar(P[idx]);showFloat(idx,inc);const sdCard=$('#sdCard');sdCard.classList.add('shake-sm');setTimeout(()=>sdCard.classList.remove('shake-sm'),250);if(P[idx].cur>=P[idx].tgt){triggerWin(idx);}else{applyState();}simming=false;$('#simBtn').disabled=false;$('#simBtn').textContent='SIMULATE EADP TELEMETRY';},600);});
+P.forEach(p=>updateBar(p));applyState();
+
+/* ═══ Rematch: spawn a new active card below ═══ */
+function spawnRematchCard(gn,gc,mt,tgt){
+const _oN=activeChatName,_oA=activeChatAv;
+const cid=`rm${++newCardId}`;const c=document.createElement('div');c.className='sd';c.id=`sdNew${cid}`;c.style.borderColor=`${gc}66`;c.style.boxShadow=`0 0 24px ${gc}33,0 4px 20px rgba(0,0,0,.4)`;
+c.innerHTML=`<div class="gold-ov"></div><div class="particle-c" id="ptc${cid}"></div><div class="sd-rematch-tag">\u26A1 REMATCH \u00B7 ${gn}</div><div class="sd-h"><div class="sd-gl"><div class="sd-gd" style="background:${gc}"></div><div class="sd-gn">${gn}</div></div><div class="badge badge-live" id="bdg${cid}"><div class="bdot"></div><span>LIVE</span></div></div><div class="sd-title" id="sdt${cid}">First to ${tgt} ${mt}</div><div id="lb${cid}" style="display:none" class="losing-banner">\uD83D\uDD25 You're behind \u2014 go play.</div><div class="sd-div"></div><div class="sd-p" id="np0${cid}"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=me_player" alt=""><div class="sd-crown">\uD83D\uDC51</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">YOU</div><div class="sd-track"><div class="sd-fill" id="nf0${cid}" style="width:0%;background:${gc}"></div></div></div><div class="sd-sc" id="ns0${cid}">0<span class="sd-sc-sl">/</span>${tgt}</div></div><div class="sd-p" id="np1${cid}"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=shadowranger" alt=""><div class="sd-crown">\uD83D\uDC51</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">SHADOWRANGER</div><div class="sd-track"><div class="sd-fill" id="nf1${cid}" style="width:0%;background:${gc}"></div></div></div><div class="sd-sc" id="ns1${cid}">0<span class="sd-sc-sl">/</span>${tgt}</div></div><div id="ndl${cid}" class="draw-label" style="display:none"></div><div id="nwc${cid}" class="sd-win-content" style="display:none"></div><div class="sd-sim" id="nsw${cid}"><button class="sd-sim-btn" id="nsb${cid}">SIMULATE EADP TELEMETRY</button></div><div class="sd-ft"><div class="sd-ft-l" id="nfl${cid}">EXPIRES</div><div class="sd-ft-v" id="nfv${cid}">7 days remaining</div></div>`;
+chat.appendChild(c);c.querySelectorAll('.sd-av')[1].src=_oA;c.querySelectorAll('.sd-eaid')[1].textContent=_oN.toUpperCase();scroll();
+const np=[{cur:0,tgt},{cur:0,tgt}];let npc=0,ndone=false,nsimming=false,nwonTime=null;
+function nGetSt(){if(ndone){const lw=np[0].cur>=np[0].tgt,ow=np[1].cur>=np[1].tgt;if(lw&&ow)return'draw-done';if(lw)return'win';return'loss';}if(np[0].cur===np[1].cur&&np[0].cur>0)return'draw';if(np[0].cur<np[1].cur)return'losing';return'active';}
+function nUpBar(i){const r=Math.min(np[i].cur/np[i].tgt,1);$(`#nf${i}${cid}`).style.width=`${r*100}%`;const sc=$(`#ns${i}${cid}`);sc.innerHTML=`${np[i].cur}<span class="sd-sc-sl">/</span>${np[i].tgt}`;sc.classList.add('pop');setTimeout(()=>sc.classList.remove('pop'),200);}
+function nFloat(i,inc){const el=$(`#np${i}${cid}`);const f=document.createElement('div');f.className='float-inc';f.textContent=`+${inc}`;el.appendChild(f);setTimeout(()=>f.remove(),900);}
+function nExplode(){const pc=$(`#ptc${cid}`),cols=['#FFB800','#FF9500','#FFDD00','#FFFFFF','#FFA726','#FFE082'];for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';const sz=4+Math.random()*6,a=(i/30)*Math.PI*2+(Math.random()-.5)*.5,dist=60+Math.random()*120,tx=Math.cos(a)*dist,ty=Math.sin(a)*dist-20,dur=700+Math.random()*500,del=Math.random()*200;p.style.cssText=`width:${sz}px;height:${sz}px;background:${cols[i%cols.length]};border-radius:${Math.random()>.5?'50%':'2px'};left:0;top:0;`;pc.appendChild(p);p.animate([{transform:'translate(0,0) scale(0)',opacity:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.1},{transform:`translate(${tx}px,${ty}px) scale(.5)`,opacity:0}],{duration:dur,delay:del,easing:'cubic-bezier(.25,.46,.45,.94)',fill:'forwards'});setTimeout(()=>p.remove(),dur+del+100);}}
+function nApply(){const st=nGetSt(),card=$(`#sdNew${cid}`);card.className='sd';const scm={win:'state-won',loss:'state-lost','draw-done':'state-draw-done',draw:'state-draw',losing:'state-losing'};if(scm[st])card.classList.add(scm[st]);const badge=$(`#bdg${cid}`);if(st==='win'){badge.className='badge badge-winner';badge.innerHTML='\uD83D\uDC51 WINNER';}else if(st==='loss'){badge.className='badge badge-defeated';badge.innerHTML='\uD83D\uDC80 DEFEATED';}else if(st==='draw-done'){badge.className='badge badge-draw-done';badge.innerHTML='\u26A1 DRAW';}else if(st==='draw'){badge.className='badge badge-deadlock';badge.innerHTML='\u26A1 DEADLOCK';}else if(st==='losing'){badge.className='badge badge-live badge-live-red';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}else{badge.className='badge badge-live';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}$(`#lb${cid}`).style.display=st==='losing'?'block':'none';const dl=$(`#ndl${cid}`);if(st==='draw'){dl.style.display='block';dl.textContent=`Tied at ${np[0].cur} \u2014 first to move wins`;}else dl.style.display='none';[0,1].forEach(i=>{const el=$(`#np${i}${cid}`);el.className='sd-p';if(st==='win'&&i===0)el.classList.add('winner');if(st==='loss'&&i===1)el.classList.add('winner');if(st==='loss'&&i===0)el.classList.add('loss-score');if(st==='draw-done'){el.classList.add('draw-ring','draw-bar','winner');}if(st==='draw'){el.classList.add('draw-ring','draw-bar');}if(st==='losing'&&i===0)el.classList.add('losing');});const isCmp=st==='win'||st==='loss'||st==='draw-done';$(`#nsw${cid}`).style.display=isCmp?'none':'flex';const wc=$(`#nwc${cid}`);if(isCmp){const isL=st==='loss',isD=st==='draw-done';const f1=isL?np[1].cur:np[0].cur,f2=isL?np[0].cur:np[1].cur;const c1='var(--gold)',c2=isL?'var(--red)':'var(--dim)';const rc=isL?'sd-rematch-btn loss-btn':'sd-rematch-btn';const tp=isL?'Lost':isD?'Draw':'Won';wc.style.display='block';wc.innerHTML=`<div class="sd-win-label">FINAL SCORE</div><div class="sd-win-scores"><span style="color:${c1}">${f1}</span><span style="color:${c2}"> \u2014 ${f2}</span></div><button class="${rc}" id="nrm${cid}">\u26A1 REMATCH</button><div class="sd-win-ts">${tp} ${timeAgo(nwonTime)} \u00B7 ${gn}</div>`;$(`#nrm${cid}`).addEventListener('click',function(){if(this.classList.contains('sent'))return;this.classList.add('sent');this.textContent='REMATCH SENT \u2713';spawnRematchCard(gn,gc,mt,tgt);toast('Rematch Dropped!','New Showdown created below');});}else{wc.style.display='none';wc.innerHTML='';}}
+$(`#nsb${cid}`).addEventListener('click',()=>{if(nsimming||ndone)return;nsimming=true;const btn=$(`#nsb${cid}`);btn.disabled=true;btn.textContent='PROCESSING TELEMETRY...';npc++;const cnt=npc;setTimeout(()=>{let idx,inc;if(cnt===1){idx=1;inc=2;np[1].cur=Math.min(np[1].cur+2,np[1].tgt);}else if(cnt===2){idx=0;inc=Math.max(np[1].cur-np[0].cur,1);np[0].cur=Math.min(np[0].cur+inc,np[0].tgt);}else{idx=Math.floor(Math.random()*2);inc=Math.floor(Math.random()*2)+1;np[idx].cur=Math.min(np[idx].cur+inc,np[idx].tgt);}nUpBar(idx);nFloat(idx,inc);const card=$(`#sdNew${cid}`);card.classList.add('shake-sm');setTimeout(()=>card.classList.remove('shake-sm'),250);if(np[idx].cur>=np[idx].tgt){ndone=true;nwonTime=new Date();npc=0;card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),400);if(idx===0){nExplode();confettiCelebration();}nApply();const isMe=idx===0;toast(isMe?`\uD83C\uDFC6 You claimed the crown!`:`\uD83D\uDC80 ${_oN} won the Showdown`,isMe?'The Showdown is over. Rematch?':'Better luck next time. Rematch?');}else{nApply();}nsimming=false;btn.disabled=false;btn.textContent='SIMULATE EADP TELEMETRY';},600);});
+setTimeout(()=>{const r=["Rematch? Bring it \uD83D\uDD25","I'm ready this time \uD83D\uDC80","Let's run it back \uD83D\uDC51"];addMsg(r[Math.floor(Math.random()*r.length)],'them');},1500);
+}
+
+/* ═══ loadChat — rebuild chat view for any chatId ═══ */
+function loadChat(chatId){
+const cd=CHAT_DATA[chatId];if(!cd)return;activeChatId=chatId;activeChatName=cd.name;activeChatAv=cd.av;
+$('.header-avatar').src=cd.av;$('.header-name').textContent=cd.name;$('.header-status').textContent=cd.status;
+chat.innerHTML='';const now=new Date();
+cd.msgs.forEach((m,i)=>{const w=document.createElement('div');w.className='msg-wrap';const d=document.createElement('div');d.className=`msg msg-${m.s}`;d.textContent=m.t;w.appendChild(d);const tm=document.createElement('div');const t=new Date(now.getTime()-(cd.msgs.length-i+2)*60000);tm.className=`msg-time ${m.s==='me'?'msg-time-r':'msg-time-l'}`;tm.textContent=t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});w.appendChild(tm);chat.appendChild(w);});
+const gn=cd.gn,gc=cd.gc,mt=cd.mt,tgt=cd.tgt,oppName=cd.name;
+const cid=`ld${++newCardId}`;const c=document.createElement('div');c.className='sd';c.id=`sdNew${cid}`;c.style.borderColor=`${gc}66`;c.style.boxShadow=`0 0 24px ${gc}33,0 4px 20px rgba(0,0,0,.4)`;
+c.innerHTML=`<div class="gold-ov"></div><div class="particle-c" id="ptc${cid}"></div><div class="sd-h"><div class="sd-gl"><div class="sd-gd" style="background:${gc}"></div><div class="sd-gn">${gn}</div></div><div class="badge badge-live" id="bdg${cid}"><div class="bdot"></div><span>LIVE</span></div></div><div class="sd-title" id="sdt${cid}">First to ${tgt} ${mt}</div><div id="lb${cid}" style="display:none" class="losing-banner">\uD83D\uDD25 You're behind \u2014 go play.</div><div class="sd-div"></div><div class="sd-p" id="np0${cid}"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=me_player" alt=""><div class="sd-crown">\uD83D\uDC51</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">YOU</div><div class="sd-track"><div class="sd-fill" id="nf0${cid}" style="width:0%;background:${gc}"></div></div></div><div class="sd-sc" id="ns0${cid}">0<span class="sd-sc-sl">/</span>${tgt}</div></div><div class="sd-p" id="np1${cid}"><div class="sd-aw"><img class="sd-av" src="${cd.av}" alt=""><div class="sd-crown">\uD83D\uDC51</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">${cd.name.toUpperCase()}</div><div class="sd-track"><div class="sd-fill" id="nf1${cid}" style="width:0%;background:${gc}"></div></div></div><div class="sd-sc" id="ns1${cid}">0<span class="sd-sc-sl">/</span>${tgt}</div></div><div id="ndl${cid}" class="draw-label" style="display:none"></div><div id="nwc${cid}" class="sd-win-content" style="display:none"></div><div class="sd-sim" id="nsw${cid}"><button class="sd-sim-btn" id="nsb${cid}">SIMULATE EADP TELEMETRY</button></div><div class="sd-ft"><div class="sd-ft-l" id="nfl${cid}">EXPIRES</div><div class="sd-ft-v" id="nfv${cid}">7 days remaining</div></div>`;
+chat.appendChild(c);
+const np=[{cur:cd.me,tgt},{cur:cd.opp,tgt}];let npc=0,ndone=false,nsimming=false,nwonTime=null;
+function nGetSt(){if(ndone){const lw=np[0].cur>=np[0].tgt,ow=np[1].cur>=np[1].tgt;if(lw&&ow)return'draw-done';if(lw)return'win';return'loss';}if(np[0].cur===np[1].cur&&np[0].cur>0)return'draw';if(np[0].cur<np[1].cur)return'losing';return'active';}
+function nUpBar(i){const r=Math.min(np[i].cur/np[i].tgt,1);$(`#nf${i}${cid}`).style.width=`${r*100}%`;const sc=$(`#ns${i}${cid}`);sc.innerHTML=`${np[i].cur}<span class="sd-sc-sl">/</span>${np[i].tgt}`;sc.classList.add('pop');setTimeout(()=>sc.classList.remove('pop'),200);}
+function nFloat(i,inc){const el=$(`#np${i}${cid}`);const f=document.createElement('div');f.className='float-inc';f.textContent=`+${inc}`;el.appendChild(f);setTimeout(()=>f.remove(),900);}
+function nExplode(){const pc=$(`#ptc${cid}`),cols=['#FFB800','#FF9500','#FFDD00','#FFFFFF','#FFA726','#FFE082'];for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';const sz=4+Math.random()*6,a=(i/30)*Math.PI*2+(Math.random()-.5)*.5,dist=60+Math.random()*120,tx=Math.cos(a)*dist,ty=Math.sin(a)*dist-20,dur=700+Math.random()*500,del=Math.random()*200;p.style.cssText=`width:${sz}px;height:${sz}px;background:${cols[i%cols.length]};border-radius:${Math.random()>.5?'50%':'2px'};left:0;top:0;`;pc.appendChild(p);p.animate([{transform:'translate(0,0) scale(0)',opacity:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.1},{transform:`translate(${tx}px,${ty}px) scale(.5)`,opacity:0}],{duration:dur,delay:del,easing:'cubic-bezier(.25,.46,.45,.94)',fill:'forwards'});setTimeout(()=>p.remove(),dur+del+100);}}
+function nApply(){const st=nGetSt(),card=$(`#sdNew${cid}`);card.className='sd';const scm={win:'state-won',loss:'state-lost','draw-done':'state-draw-done',draw:'state-draw',losing:'state-losing'};if(scm[st])card.classList.add(scm[st]);const badge=$(`#bdg${cid}`);if(st==='win'){badge.className='badge badge-winner';badge.innerHTML='\uD83D\uDC51 WINNER';}else if(st==='loss'){badge.className='badge badge-defeated';badge.innerHTML='\uD83D\uDC80 DEFEATED';}else if(st==='draw-done'){badge.className='badge badge-draw-done';badge.innerHTML='\u26A1 DRAW';}else if(st==='draw'){badge.className='badge badge-deadlock';badge.innerHTML='\u26A1 DEADLOCK';}else if(st==='losing'){badge.className='badge badge-live badge-live-red';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}else{badge.className='badge badge-live';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}$(`#lb${cid}`).style.display=st==='losing'?'block':'none';const dl=$(`#ndl${cid}`);if(st==='draw'){dl.style.display='block';dl.textContent=`Tied at ${np[0].cur} \u2014 first to move wins`;}else dl.style.display='none';[0,1].forEach(i=>{const el=$(`#np${i}${cid}`);el.className='sd-p';if(st==='win'&&i===0)el.classList.add('winner');if(st==='loss'&&i===1)el.classList.add('winner');if(st==='loss'&&i===0)el.classList.add('loss-score');if(st==='draw-done'){el.classList.add('draw-ring','draw-bar','winner');}if(st==='draw'){el.classList.add('draw-ring','draw-bar');}if(st==='losing'&&i===0)el.classList.add('losing');});const isCmp=st==='win'||st==='loss'||st==='draw-done';$(`#nsw${cid}`).style.display=isCmp?'none':'flex';const wc=$(`#nwc${cid}`);if(isCmp){const isL=st==='loss',isD=st==='draw-done';const f1=isL?np[1].cur:np[0].cur,f2=isL?np[0].cur:np[1].cur;const c1='var(--gold)',c2=isL?'var(--red)':'var(--dim)';const rc=isL?'sd-rematch-btn loss-btn':'sd-rematch-btn';const tp=isL?'Lost':isD?'Draw':'Won';wc.style.display='block';wc.innerHTML=`<div class="sd-win-label">FINAL SCORE</div><div class="sd-win-scores"><span style="color:${c1}">${f1}</span><span style="color:${c2}"> \u2014 ${f2}</span></div><button class="${rc}" id="nrm${cid}">\u26A1 REMATCH</button><div class="sd-win-ts">${tp} ${timeAgo(nwonTime)} \u00B7 ${gn}</div>`;$(`#nrm${cid}`).addEventListener('click',function(){if(this.classList.contains('sent'))return;this.classList.add('sent');this.textContent='REMATCH SENT \u2713';spawnRematchCard(gn,gc,mt,tgt);toast('Rematch Dropped!','New Showdown created below');});}else{wc.style.display='none';wc.innerHTML='';}}
+[0,1].forEach(i=>nUpBar(i));
+if(np[0].cur>=np[0].tgt||np[1].cur>=np[1].tgt){ndone=true;nwonTime=new Date(Date.now()-60000);nApply();if(np[0].cur>=np[0].tgt){nExplode();confettiCelebration();}}else{nApply();}
+$(`#nsb${cid}`).addEventListener('click',()=>{if(nsimming||ndone)return;nsimming=true;const btn=$(`#nsb${cid}`);btn.disabled=true;btn.textContent='PROCESSING TELEMETRY...';npc++;const cnt=npc;setTimeout(()=>{let idx,inc;if(cnt===1){idx=1;inc=2;np[1].cur=Math.min(np[1].cur+2,np[1].tgt);}else if(cnt===2){idx=0;inc=Math.max(np[1].cur-np[0].cur,1);np[0].cur=Math.min(np[0].cur+inc,np[0].tgt);}else{idx=Math.floor(Math.random()*2);inc=Math.floor(Math.random()*2)+1;np[idx].cur=Math.min(np[idx].cur+inc,np[idx].tgt);}nUpBar(idx);nFloat(idx,inc);const card=$(`#sdNew${cid}`);card.classList.add('shake-sm');setTimeout(()=>card.classList.remove('shake-sm'),250);if(np[idx].cur>=np[idx].tgt){ndone=true;nwonTime=new Date();npc=0;card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),400);if(idx===0){nExplode();confettiCelebration();}nApply();const isMe=idx===0;toast(isMe?`\uD83C\uDFC6 You claimed the crown!`:`\uD83D\uDC80 ${oppName} won the Showdown`,isMe?'The Showdown is over. Rematch?':'Better luck next time. Rematch?');}else{nApply();}nsimming=false;btn.disabled=false;btn.textContent='SIMULATE EADP TELEMETRY';},600);});
+cd.post.forEach(m=>{const w=document.createElement('div');w.className='msg-wrap';const d=document.createElement('div');d.className=`msg msg-${m.s}`;d.textContent=m.t;w.appendChild(d);const tm=document.createElement('div');tm.className=`msg-time ${m.s==='me'?'msg-time-r':'msg-time-l'}`;tm.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});w.appendChild(tm);chat.appendChild(w);});
+scroll();
+}
+
+/* ═══ CHAT: Send message ═══ */
+const inp=$('#inp'),btnSend=$('#btnSend');
+inp.addEventListener('input',()=>btnSend.classList.toggle('active',inp.value.trim().length>0));
+function sendMsg(){const t=inp.value.trim();if(!t)return;addMsg(t,'me');inp.value='';btnSend.classList.remove('active');setTimeout(()=>{const r=['Sounds good! 🎮',"Let's do it!",'On my way!','Give me 5 minutes','See you there!'];addMsg(r[Math.floor(Math.random()*r.length)],'them');},1500);}
+btnSend.addEventListener('click',sendMsg);inp.addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
+
+/* ═══ Creation Sheet ═══ */
+let selG=null,selM=null,selT=null;
+function openSheet(){$('#sheetBg').classList.add('open');$('#csheet').classList.add('open');resetSheet();$('.vs-n').textContent=activeChatName;}
+function closeSheet(){$('#sheetBg').classList.remove('open');$('#csheet').classList.remove('open');}
+function resetSheet(){selG=selM=selT=null;$$('.g-card').forEach(c=>c.classList.remove('sel'));$('#mStep').classList.remove('vis');$('#tStep').classList.remove('vis');$('#crBtn').classList.remove('vis');$('#d1').classList.remove('active');$('#d2').classList.remove('active');}
+$('#btnSD').addEventListener('click',openSheet);$('#shClose').addEventListener('click',closeSheet);$('#sheetBg').addEventListener('click',closeSheet);
+$$('.g-card').forEach(card=>card.addEventListener('click',()=>{$$('.g-card').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');selG={name:card.dataset.game,color:card.dataset.color,metrics:card.dataset.metrics.split(',')};selM=selT=null;const row=$('#mRow');row.innerHTML='';selG.metrics.forEach(m=>{const p=document.createElement('div');p.className='m-pill';p.textContent=m;p.style.cssText=`--sel-c:${selG.color}`;p.addEventListener('click',()=>{selM=m;selT=null;$$('.m-pill').forEach(x=>x.classList.remove('sel'));p.classList.add('sel');const tr=$('#tRow');tr.innerHTML='';[5,10,15,20,25].forEach(t=>{const tp=document.createElement('div');tp.className='t-pill';tp.textContent=t;tp.style.cssText=`--sel-c:${selG.color}`;tp.addEventListener('click',()=>{selT=t;$$('.t-pill').forEach(x=>x.classList.remove('sel'));tp.classList.add('sel');$('#crBtn').style.background=selG.color;$('#crBtn').classList.add('vis');});tr.appendChild(tp);});$('#tStep').classList.add('vis');$('#d2').classList.add('active');});row.appendChild(p);});$('#mStep').classList.add('vis');$('#tStep').classList.remove('vis');$('#crBtn').classList.remove('vis');$('#d1').classList.add('active');$('#d2').classList.remove('active');}));
+let newCardId=0;
+$('#crBtn').addEventListener('click',()=>{if(!selG||!selM||!selT)return;closeSheet();addMsg(`⚡ Showdown dropped: First to ${selT} ${selM}`,'system');const cid=`nc${++newCardId}`;const c=document.createElement('div');c.className='sd';c.id=`sdNew${cid}`;c.style.borderColor=`${selG.color}66`;c.style.boxShadow=`0 0 24px ${selG.color}33,0 4px 20px rgba(0,0,0,.4)`;const gn=selG.name,gc=selG.color,mt=selM,tgt=selT;c.innerHTML=`<div class="gold-ov"></div><div class="particle-c" id="ptc${cid}"></div><div class="sd-h"><div class="sd-gl"><div class="sd-gd" style="background:${gc}"></div><div class="sd-gn">${gn}</div></div><div class="badge badge-live" id="bdg${cid}"><div class="bdot"></div><span>LIVE</span></div></div><div class="sd-title" id="sdt${cid}">First to ${tgt} ${mt}</div><div id="lb${cid}" style="display:none" class="losing-banner">🔥 You're behind — go play.</div><div class="sd-div"></div><div class="sd-p" id="np0${cid}"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=me_player" alt=""><div class="sd-crown">👑</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">YOU</div><div class="sd-track"><div class="sd-fill" id="nf0${cid}" style="width:0%;background:${gc}"></div></div></div><div class="sd-sc" id="ns0${cid}">0<span class="sd-sc-sl">/</span>${tgt}</div></div><div class="sd-p" id="np1${cid}"><div class="sd-aw"><img class="sd-av" src="https://i.pravatar.cc/80?u=shadowranger" alt=""><div class="sd-crown">👑</div><div class="sd-av-ring"></div></div><div class="sd-bs"><div class="sd-eaid">SHADOWRANGER</div><div class="sd-track"><div class="sd-fill" id="nf1${cid}" style="width:0%;background:${gc}"></div></div></div><div class="sd-sc" id="ns1${cid}">0<span class="sd-sc-sl">/</span>${tgt}</div></div><div id="ndl${cid}" class="draw-label" style="display:none"></div><div id="nwc${cid}" class="sd-win-content" style="display:none"></div><div class="sd-sim" id="nsw${cid}"><button class="sd-sim-btn" id="nsb${cid}">SIMULATE EADP TELEMETRY</button></div><div class="sd-ft"><div class="sd-ft-l" id="nfl${cid}">EXPIRES</div><div class="sd-ft-v" id="nfv${cid}">7 days remaining</div></div>`;chat.appendChild(c);c.querySelectorAll('.sd-av')[1].src=activeChatAv;c.querySelectorAll('.sd-eaid')[1].textContent=activeChatName.toUpperCase();scroll();toast('Showdown Dropped!',activeChatName+' has been challenged');
+const np=[{cur:0,tgt},{cur:0,tgt}];let npc=0,ndone=false,nsimming=false,nwonTime=null;
+function nGetSt(){if(ndone){const lw=np[0].cur>=np[0].tgt,ow=np[1].cur>=np[1].tgt;if(lw&&ow)return'draw-done';if(lw)return'win';return'loss';}if(np[0].cur===np[1].cur&&np[0].cur>0)return'draw';if(np[0].cur<np[1].cur)return'losing';return'active';}
+function nUpBar(i){const r=Math.min(np[i].cur/np[i].tgt,1);$(`#nf${i}${cid}`).style.width=`${r*100}%`;const sc=$(`#ns${i}${cid}`);sc.innerHTML=`${np[i].cur}<span class="sd-sc-sl">/</span>${np[i].tgt}`;sc.classList.add('pop');setTimeout(()=>sc.classList.remove('pop'),200);}
+function nFloat(i,inc){const el=$(`#np${i}${cid}`);const f=document.createElement('div');f.className='float-inc';f.textContent=`+${inc}`;el.appendChild(f);setTimeout(()=>f.remove(),900);}
+function nExplode(){const pc=$(`#ptc${cid}`),cols=['#FFB800','#FF9500','#FFDD00','#FFFFFF','#FFA726','#FFE082'];for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';const sz=4+Math.random()*6,a=(i/30)*Math.PI*2+(Math.random()-.5)*.5,dist=60+Math.random()*120,tx=Math.cos(a)*dist,ty=Math.sin(a)*dist-20,dur=700+Math.random()*500,del=Math.random()*200;p.style.cssText=`width:${sz}px;height:${sz}px;background:${cols[i%cols.length]};border-radius:${Math.random()>.5?'50%':'2px'};left:0;top:0;`;pc.appendChild(p);p.animate([{transform:'translate(0,0) scale(0)',opacity:0},{transform:'translate(0,0) scale(1)',opacity:1,offset:.1},{transform:`translate(${tx}px,${ty}px) scale(.5)`,opacity:0}],{duration:dur,delay:del,easing:'cubic-bezier(.25,.46,.45,.94)',fill:'forwards'});setTimeout(()=>p.remove(),dur+del+100);}}
+function nApply(){const st=nGetSt(),card=$(`#sdNew${cid}`);card.className='sd';const scm={win:'state-won',loss:'state-lost','draw-done':'state-draw-done',draw:'state-draw',losing:'state-losing'};if(scm[st])card.classList.add(scm[st]);const badge=$(`#bdg${cid}`);if(st==='win'){badge.className='badge badge-winner';badge.innerHTML='\uD83D\uDC51 WINNER';}else if(st==='loss'){badge.className='badge badge-defeated';badge.innerHTML='\uD83D\uDC80 DEFEATED';}else if(st==='draw-done'){badge.className='badge badge-draw-done';badge.innerHTML='\u26A1 DRAW';}else if(st==='draw'){badge.className='badge badge-deadlock';badge.innerHTML='\u26A1 DEADLOCK';}else if(st==='losing'){badge.className='badge badge-live badge-live-red';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}else{badge.className='badge badge-live';badge.innerHTML='<div class="bdot"></div><span>LIVE</span>';}$(`#lb${cid}`).style.display=st==='losing'?'block':'none';const dl=$(`#ndl${cid}`);if(st==='draw'){dl.style.display='block';dl.textContent=`Tied at ${np[0].cur} \u2014 first to move wins`;}else dl.style.display='none';[0,1].forEach(i=>{const el=$(`#np${i}${cid}`);el.className='sd-p';if(st==='win'&&i===0)el.classList.add('winner');if(st==='loss'&&i===1)el.classList.add('winner');if(st==='loss'&&i===0)el.classList.add('loss-score');if(st==='draw-done'){el.classList.add('draw-ring','draw-bar','winner');}if(st==='draw'){el.classList.add('draw-ring','draw-bar');}if(st==='losing'&&i===0)el.classList.add('losing');});const isCmp=st==='win'||st==='loss'||st==='draw-done';$(`#nsw${cid}`).style.display=isCmp?'none':'flex';const wc=$(`#nwc${cid}`);if(isCmp){const isL=st==='loss',isD=st==='draw-done';const f1=isL?np[1].cur:np[0].cur,f2=isL?np[0].cur:np[1].cur;const c1='var(--gold)',c2=isL?'var(--red)':'var(--dim)';const rc=isL?'sd-rematch-btn loss-btn':'sd-rematch-btn';const tp=isL?'Lost':isD?'Draw':'Won';wc.style.display='block';wc.innerHTML=`<div class="sd-win-label">FINAL SCORE</div><div class="sd-win-scores"><span style="color:${c1}">${f1}</span><span style="color:${c2}"> \u2014 ${f2}</span></div><button class="${rc}" id="nrm${cid}">\u26A1 REMATCH</button><div class="sd-win-ts">${tp} ${timeAgo(nwonTime)} \u00B7 ${gn}</div>`;$(`#nrm${cid}`).addEventListener('click',function(){if(this.classList.contains('sent'))return;this.classList.add('sent');this.textContent='REMATCH SENT \u2713';spawnRematchCard(gn,gc,mt,tgt);toast('Rematch Dropped!','New Showdown created below');});}else{wc.style.display='none';wc.innerHTML='';}}
+$(`#nsb${cid}`).addEventListener('click',()=>{if(nsimming||ndone)return;nsimming=true;const btn=$(`#nsb${cid}`);btn.disabled=true;btn.textContent='PROCESSING TELEMETRY...';npc++;const cnt=npc;setTimeout(()=>{let idx,inc;if(cnt===1){idx=1;inc=2;np[1].cur=Math.min(np[1].cur+2,np[1].tgt);}else if(cnt===2){idx=0;inc=Math.max(np[1].cur-np[0].cur,1);np[0].cur=Math.min(np[0].cur+inc,np[0].tgt);}else{idx=Math.floor(Math.random()*2);inc=Math.floor(Math.random()*2)+1;np[idx].cur=Math.min(np[idx].cur+inc,np[idx].tgt);}nUpBar(idx);nFloat(idx,inc);const card=$(`#sdNew${cid}`);card.classList.add('shake-sm');setTimeout(()=>card.classList.remove('shake-sm'),250);if(np[idx].cur>=np[idx].tgt){ndone=true;nwonTime=new Date();npc=0;card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),400);if(idx===0){nExplode();confettiCelebration();}nApply();const isMe=idx===0;toast(isMe?'\uD83C\uDFC6 You claimed the crown!':`\uD83D\uDC80 ${activeChatName} won the Showdown`,isMe?'The Showdown is over. Rematch?':'Better luck next time. Rematch?');}else{nApply();}nsimming=false;btn.disabled=false;btn.textContent='SIMULATE EADP TELEMETRY';},600);});
+setTimeout(()=>{const r=["Oh you're serious? Let's go \uD83D\uDD25","Accepted. Prepare to lose \uD83D\uDC80","Challenge accepted \uD83D\uDE08","Easy money. Bring it \uD83D\uDC51"];addMsg(r[Math.floor(Math.random()*r.length)],'them');},2000);});
+</script>
+</body>
+</html>
